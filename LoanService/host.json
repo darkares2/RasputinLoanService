@@ -1,5 +1,6 @@
 {
     "version": "2.0",
+    "extensions": { "queues": { "maxPollingInterval": "00:00:02"} },
     "logging": {
         "applicationInsights": {
             "samplingSettings": {
