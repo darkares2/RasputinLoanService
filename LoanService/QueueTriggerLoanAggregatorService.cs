@@ -19,7 +19,7 @@ namespace LoanService
         private static readonly Dictionary<string, AggregatedEntry> aggregatedMessages = new Dictionary<string, AggregatedEntry>();
 
         [FunctionName("QueueTriggerLoanAggregatorService")]
-        public async Task RunAsync([QueueTrigger("ms-loans-aggregator", Connection = "rasputinstorageaccount_STORAGE")]string myQueueItem, ILogger log)
+        public async Task RunAsync([ServiceBusTrigger("ms-loans-aggregator", Connection = "rasputinServicebus")]string myQueueItem, ILogger log)
         {
             log.LogInformation($"ms-loans-aggregator triggered: {myQueueItem}");
 

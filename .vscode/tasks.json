@@ -73,7 +73,7 @@
 			"options": {
 				"cwd": "${workspaceFolder}/LoanService/bin/Debug/net6.0"
 			},
-			"command": "host start",
+			"command": "host start --port 5025",
 			"isBackground": true,
 			"problemMatcher": "$func-dotnet-watch"
 		}

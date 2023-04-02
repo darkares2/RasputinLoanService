@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Extensions.Logging;
@@ -9,19 +12,20 @@ using Microsoft.Extensions.Logging;
 public static class MessageHelper {
         public static async Task QueueMessageAsync(string queueName, Message message, ILogger log)
         {
-            // Get a reference to the queue
-            var str = Environment.GetEnvironmentVariable("rasputinstorageaccount_STORAGE");
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(str);
-            CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
-            CloudQueue queue = queueClient.GetQueueReference(queueName);
+            await using var client = new ServiceBusClient(Environment.GetEnvironmentVariable("rasputinServicebus"));
+            ServiceBusSender sender = client.CreateSender(queueName);
 
-            // Create a new message and add it to the queue
-            CloudQueueMessage queueMessage = new CloudQueueMessage(JsonSerializer.Serialize(message, new JsonSerializerOptions
+            string queueMessage = JsonSerializer.Serialize(message, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                })
-                );
-            await queue.AddMessageAsync(queueMessage);
+                });            
+            var messageBytes = Encoding.UTF8.GetBytes(queueMessage);
+            ServiceBusMessage messageObject = new ServiceBusMessage(messageBytes);
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            await sender.SendMessageAsync(messageObject, cancellationToken);
         }
 
         public static void AddContentHeader(Message message, string content)

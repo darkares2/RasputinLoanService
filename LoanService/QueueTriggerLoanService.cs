@@ -14,7 +14,7 @@ namespace LoanService
     public class QueueTriggerLoanService
     {
         [FunctionName("QueueTriggerLoanService")]
-        public async Task RunAsync([QueueTrigger("ms-loans", Connection = "rasputinstorageaccount_STORAGE")]string myQueueItem, ILogger log)
+        public async Task RunAsync([ServiceBusTrigger("ms-loans", Connection = "rasputinServicebus")]string myQueueItem, ILogger log)
         {
             log.LogInformation($"ms-loans triggered: {myQueueItem}");
             var message = JsonSerializer.Deserialize<Message>(myQueueItem, new JsonSerializerOptions
