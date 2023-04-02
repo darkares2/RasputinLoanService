@@ -27,6 +27,7 @@ namespace LoanService
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
+            await MessageHelper.SendLog(message);
 
             await BuildAggregatedReplyAsync(message, log);
         }

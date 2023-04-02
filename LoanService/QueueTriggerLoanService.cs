@@ -21,6 +21,7 @@ namespace LoanService
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
+            await MessageHelper.SendLog(message);
             var cmd = JsonSerializer.Deserialize<CmdLoan>(message.Body, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
