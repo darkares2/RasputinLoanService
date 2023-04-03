@@ -29,7 +29,14 @@ namespace LoanService
             });
             await MessageHelper.SendLog(message);
 
-            await BuildAggregatedReplyAsync(message, log);
+            try {
+                await BuildAggregatedReplyAsync(message, log);
+            } catch(Exception ex) {
+                var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
+                current.Fields["Name"] = $"Error (LoanAggregator): {ex.Message}";
+                current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+                await MessageHelper.SendLog(message);
+            }
         }
 
         private async Task BuildAggregatedReplyAsync(Message message, ILogger log)
