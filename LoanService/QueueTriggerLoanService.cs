@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Storage;
@@ -22,25 +23,32 @@ namespace LoanService
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
             await MessageHelper.SendLog(message);
-            var cmd = JsonSerializer.Deserialize<CmdLoan>(message.Body, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-            var loan = cmd.Loan;
-            if (cmd.Command == "loan")
-            {
-                await InsertLoanAsync(message, loan, log);
-            } else if (cmd.Command == "return")
-            {
-                await UpdateLoanAsync(message, loan, log);
-            } else if (cmd.Command == "list_active_books_user")
-            {
-                await ListActiveUserLoansAsync(message, cmd.Parameter, log);
-            } else if (cmd.Command == "list_loan_history_by_isbn")
-            {
-                await ListLoanHistoryByIsbnAsync(message, cmd.Parameter, log);
-            } else {
-                log.LogError($"Command {cmd.Command} not supported");
+            try {
+                var cmd = JsonSerializer.Deserialize<CmdLoan>(message.Body, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+                var loan = cmd.Loan;
+                if (cmd.Command == "loan")
+                {
+                    await InsertLoanAsync(message, loan, log);
+                } else if (cmd.Command == "return")
+                {
+                    await UpdateLoanAsync(message, loan, log);
+                } else if (cmd.Command == "list_active_books_user")
+                {
+                    await ListActiveUserLoansAsync(message, cmd.Parameter, log);
+                } else if (cmd.Command == "list_loan_history_by_isbn")
+                {
+                    await ListLoanHistoryByIsbnAsync(message, cmd.Parameter, log);
+                } else {
+                    log.LogError($"Command {cmd.Command} not supported");
+                }
+            } catch(Exception ex) {
+                var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
+                current.Fields["Name"] = $"Error (Loan): {ex.Message}";
+                current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+                await MessageHelper.SendLog(message);
             }
 
         }
