@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -18,11 +19,13 @@ namespace LoanService
         public async Task RunAsync([ServiceBusTrigger("ms-loans", Connection = "rasputinServicebus")]string myQueueItem, ILogger log)
         {
             log.LogInformation($"ms-loans triggered: {myQueueItem}");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            DateTime receivedMessageTime = DateTime.UtcNow;
             var message = JsonSerializer.Deserialize<Message>(myQueueItem, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
-            await MessageHelper.SendLog(message);
             try {
                 var cmd = JsonSerializer.Deserialize<CmdLoan>(message.Body, new JsonSerializerOptions
                 {
@@ -44,11 +47,15 @@ namespace LoanService
                 } else {
                     log.LogError($"Command {cmd.Command} not supported");
                 }
+                stopwatch.Stop();
+                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
             } catch(Exception ex) {
+                stopwatch.Stop();
                 var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
-                current.Fields["Name"] = $"Error (Loan): {ex.Message}";
+                current.Fields["Name"] = current.Fields["Name"] + $"-Error (Loan): {ex.Message}";
                 current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-                await MessageHelper.SendLog(message);
+                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
+                throw;
             }
 
         }

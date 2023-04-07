@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -22,20 +23,25 @@ namespace LoanService
         public async Task RunAsync([ServiceBusTrigger("ms-loans-aggregator", Connection = "rasputinServicebus")]string myQueueItem, ILogger log)
         {
             log.LogInformation($"ms-loans-aggregator triggered: {myQueueItem}");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            DateTime receivedMessageTime = DateTime.UtcNow;
 
             var message = JsonSerializer.Deserialize<Message>(myQueueItem, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
-            await MessageHelper.SendLog(message);
-
             try {
                 await BuildAggregatedReplyAsync(message, log);
+                stopwatch.Stop();
+                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
             } catch(Exception ex) {
                 var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
-                current.Fields["Name"] = $"Error (LoanAggregator): {ex.Message}";
+                current.Fields["Name"] = current.Fields["Name"] + $"-Error (LoanAggregator): {ex.Message}";
                 current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-                await MessageHelper.SendLog(message);
+                stopwatch.Stop();
+                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
+                throw;
             }
         }
 

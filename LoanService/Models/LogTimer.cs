@@ -5,4 +5,5 @@ public class LogTimer {
     public string Queue { get; set; }
     public DateTime SentTimestamp {get; set; }
     public DateTime ReceiveTimestamp { get;set; }
+    public long ProcesMs { get; set; }
 }

@@ -37,15 +37,16 @@ public static class MessageHelper {
         current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
     }
 
-    public static async Task SendLog(Message message)
+    public static async Task SendLog(Message message, DateTime receivedMessageTime, long elapsedMilliseconds)
         {
             var idHeader = message.Headers.FirstOrDefault(x => x.Name.Equals("id-header"));
             var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
             LogTimer logTimer = new LogTimer() {
                 Id = Guid.Parse(idHeader.Fields["GUID"]),
                 Queue = current.Fields["Name"],
-                SentTimestamp = DateTime.ParseExact(current.Fields["Timestamp"], "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
-                ReceiveTimestamp = DateTime.UtcNow
+                SentTimestamp = DateTime.ParseExact(current.Fields["Timestamp"], "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
+                ReceiveTimestamp = receivedMessageTime,
+                ProcesMs = elapsedMilliseconds
             };
             await using var client = new ServiceBusClient(Environment.GetEnvironmentVariable("rasputinServicebus"));
             ServiceBusSender sender = client.CreateSender("ms-logtimer");
