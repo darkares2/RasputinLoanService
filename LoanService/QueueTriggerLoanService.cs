@@ -26,7 +26,13 @@ namespace LoanService
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
+            var logMessage = new Message();
             try {
+                List<MessageHeader> headers = new List<MessageHeader>();
+                headers.Add(new MessageHeader() { Name = "id-header", Fields = new Dictionary<string, string>() { { "GUID", message.Headers.FirstOrDefault(x => x.Name.Equals("id-header")).Fields["GUID"] } } });
+                headers.Add(new MessageHeader() { Name = "current-queue-header", Fields = new Dictionary<string, string>() { { "Name", message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header")).Fields["Name"] }, { "Timestamp", message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header")).Fields["Timestamp"] } } });
+                logMessage.Headers = headers.ToArray();
+
                 var cmd = JsonSerializer.Deserialize<CmdLoan>(message.Body, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -48,12 +54,12 @@ namespace LoanService
                     log.LogError($"Command {cmd.Command} not supported");
                 }
                 stopwatch.Stop();
-                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
+                await MessageHelper.SendLog(logMessage, receivedMessageTime, stopwatch.ElapsedMilliseconds);
             } catch(Exception ex) {
                 stopwatch.Stop();
-                var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
+                var current = logMessage.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
                 current.Fields["Name"] = current.Fields["Name"] + $"-Error (Loan): {ex.Message}";
-                await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
+                await MessageHelper.SendLog(logMessage, receivedMessageTime, stopwatch.ElapsedMilliseconds);
                 throw;
             }
 
