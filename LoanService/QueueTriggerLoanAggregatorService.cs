@@ -38,7 +38,6 @@ namespace LoanService
             } catch(Exception ex) {
                 var current = message.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
                 current.Fields["Name"] = current.Fields["Name"] + $"-Error (LoanAggregator): {ex.Message}";
-                current.Fields["Timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
                 stopwatch.Stop();
                 await MessageHelper.SendLog(message, receivedMessageTime, stopwatch.ElapsedMilliseconds);
                 throw;
