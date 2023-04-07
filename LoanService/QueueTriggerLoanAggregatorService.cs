@@ -47,7 +47,6 @@ namespace LoanService
                 current.Fields["Name"] = current.Fields["Name"] + $"-Error (LoanAggregator): {ex.Message}";
                 stopwatch.Stop();
                 await MessageHelper.SendLog(logMessage, receivedMessageTime, stopwatch.ElapsedMilliseconds);
-                throw;
             }
         }
 
