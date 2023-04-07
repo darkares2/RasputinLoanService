@@ -56,6 +56,7 @@ namespace LoanService
                 stopwatch.Stop();
                 await MessageHelper.SendLog(logMessage, receivedMessageTime, stopwatch.ElapsedMilliseconds);
             } catch(Exception ex) {
+                log.LogError("Processing failed", ex);
                 stopwatch.Stop();
                 var current = logMessage.Headers.FirstOrDefault(x => x.Name.Equals("current-queue-header"));
                 current.Fields["Name"] = current.Fields["Name"] + $"-Error (Loan): {ex.Message}";
